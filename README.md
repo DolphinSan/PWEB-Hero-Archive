@@ -267,21 +267,19 @@ GET /api/auth/me          - Get current user info
 
 ---
 
-## 9. Pembagian Tugas (Saran)
-
-**Muhammad Krisna Putra Pamungkas (5053241001):**
+## 9. Pembagian Tugas
+**Muhammad Khalid Ash Shiddiqi (5053241030):**
 - Backend development (API endpoints)
 - Database design & management
 - Authentication & authorization
 - API testing
 
-**Muhammad Khalid Ash Shiddiqi (5053241030):**
+**Muhammad Krisna Putra Pamungkas (5053241001):**
 - Frontend development (UI/UX)
 - Integration dengan backend API
 - Responsive design
 - Frontend testing
 
-**Catatan:** Pembagian ini fleksibel dan bisa disesuaikan dengan keahlian masing-masing.
 
 ---
 
@@ -294,6 +292,3 @@ GET /api/auth/me          - Get current user info
 - **Tailwind CSS:** https://tailwindcss.com
 
 ---
-
-**Catatan Tambahan:**
-Proposal ini dapat disesuaikan berdasarkan feedback dosen atau kebutuhan teknis yang muncul selama development.
