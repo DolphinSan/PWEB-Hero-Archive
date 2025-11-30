@@ -1,0 +1,16 @@
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "rpl1@heroarchive.com",
+  "password": "RPL12345"
+}
+
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "RPL123",
+  "email": "rpl123@heroarchive.com",
+  "password": "RPL12345"
+}
