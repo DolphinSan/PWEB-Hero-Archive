@@ -1,3 +1,4 @@
+const pool = require('../config/database');
 exports.createDraft = async (req, res) => {
   try {
     const { team_name, hero_ids } = req.body;

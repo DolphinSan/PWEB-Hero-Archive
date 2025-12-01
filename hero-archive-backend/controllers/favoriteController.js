@@ -1,3 +1,4 @@
+const pool = require('../config/database');
 exports.addFavorite = async (req, res) => {
   try {
     const { hero_id, notes, priority } = req.body;

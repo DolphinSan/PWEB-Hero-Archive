@@ -1,23 +1,4 @@
-exports.createHero = async (req, res) => {
-  try {
-    const { name, role, specialty, difficulty, durability, offense, control_stat, movement, image_url, description } = req.body;
-
-    const result = await pool.query(
-      `INSERT INTO heroes (name, role, specialty, difficulty, durability, offense, control_stat, movement, image_url, description) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
-       RETURNING *`,
-      [name, role, specialty, difficulty, durability, offense, control_stat, movement, image_url, description]
-    );
-
-    res.status(201).json({
-      message: 'Hero created successfully',
-      hero: result.rows[0]
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
-  }
-};
+const pool = require('../config/database');
 
 // READ - Get all heroes (with filter & search)
 exports.getAllHeroes = async (req, res) => {
@@ -62,6 +43,28 @@ exports.getHeroById = async (req, res) => {
     }
 
     res.json({ hero: result.rows[0] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// CREATE - Add new hero (Admin only)
+exports.createHero = async (req, res) => {
+  try {
+    const { name, role, specialty, difficulty, durability, offense, control_stat, movement, image_url, description } = req.body;
+
+    const result = await pool.query(
+      `INSERT INTO heroes (name, role, specialty, difficulty, durability, offense, control_stat, movement, image_url, description) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+       RETURNING *`,
+      [name, role, specialty, difficulty, durability, offense, control_stat, movement, image_url, description]
+    );
+
+    res.status(201).json({
+      message: 'Hero created successfully',
+      hero: result.rows[0]
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
