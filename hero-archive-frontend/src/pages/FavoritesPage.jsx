@@ -161,7 +161,7 @@ function FavoritesPage() {
                   <div className="favorite-info">
                     <div className="favorite-header">
                       <h3>{favorite.hero_name}</h3>
-                      <span className={`priority-badge priority-${favorite.priority?.toLowerCase() || 'medium'}`}>
+                      <span className={`priority-badge priority-${String(favorite.priority || 'medium').toLowerCase()}`}>
                         {favorite.priority || 'Medium'}
                       </span>
                     </div>

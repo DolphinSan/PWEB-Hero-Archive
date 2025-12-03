@@ -68,8 +68,17 @@ function HeroGalleryPage() {
   };
 
   const renderDifficultyStars = (difficulty) => {
-    const maxStars = 5;
-    return '★'.repeat(difficulty) + '☆'.repeat(maxStars - difficulty);
+    const validDifficulty = Math.max(0, Math.min(10, Number(difficulty) || 0));
+    
+    const fullStars = Math.floor(validDifficulty);
+    const emptyStars = 10 - fullStars;
+    
+    return (
+      <>
+        {'★'.repeat(fullStars)}
+        {'☆'.repeat(Math.max(0, emptyStars))} 
+      </>
+    );
   };
 
   const renderStatBar = (value, max = 5) => {

@@ -1,5 +1,5 @@
 // API Client dengan auto token injection
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000:api';
 
 const client = {
   async get(endpoint, options = {}) {

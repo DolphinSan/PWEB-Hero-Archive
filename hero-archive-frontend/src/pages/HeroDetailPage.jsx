@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getHeroById, getReviews, addReview, updateReview, deleteReview, addFavorite, removeFavorite } from '../api/heroes';
+import { getHeroById, getReviews, addReview, updateReview, deleteReview, addFavorite, deleteFavorite } from '../api/heroes';
 
 function HeroDetailPage() {
   const { id } = useParams();

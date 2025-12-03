@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5000';
+const API_BASE = 'http://localhost:5000/api';
 
 // Helper function untuk fetch dengan auth
 const fetchWithAuth = async (url, options = {}) => {
@@ -58,6 +58,7 @@ export async function deleteHero(id) {
 export async function getFavorites() {
   const token = localStorage.getItem('token');
   if (!token) throw new Error('Not authenticated');
+  
   return fetchWithAuth(`${API_BASE}/favorites`);
 }
 
@@ -89,7 +90,7 @@ export async function deleteFavorite(favoriteId) {
 
 // REVIEWS
 export async function getReviews(heroId) {
-  return fetchWithAuth(`${API_BASE}/reviews?hero_id=${heroId}`);
+  return fetchWithAuth(`${API_BASE}/reviews/hero/${heroId}`);  // ✅ Ubah jadi path parameter
 }
 
 export async function addReview(heroId, rating, comment) {
