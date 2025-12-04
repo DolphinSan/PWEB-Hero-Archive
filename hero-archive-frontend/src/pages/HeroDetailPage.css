@@ -393,6 +393,84 @@
   background: #b91c1c;
 }
 
+.btn-edit-review {
+  padding: 0.4rem 0.8rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-edit-review:hover {
+  background: #2563eb;
+}
+
+.review-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.review-edit-form {
+  padding: 1rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+}
+
+.review-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  justify-content: flex-end;
+}
+
+.btn-save-review {
+  padding: 0.5rem 1rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-save-review:hover:not(:disabled) {
+  background: #059669;
+}
+
+.btn-save-review:disabled {
+  background: #6b7280;
+  cursor: not-allowed;
+}
+
+.btn-cancel-edit {
+  padding: 0.5rem 1rem;
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel-edit:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+.btn-cancel-edit:disabled {
+  background: #6b7280;
+  cursor: not-allowed;
+}
+
 .reviews-placeholder {
   color: #9ca3af;
   font-style: italic;

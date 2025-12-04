@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getHeroById, addFavorite, getFavorites, getReviews, addReview, deleteReview } from '../api/heroes';
+import { getHeroById, addFavorite, getFavorites, getReviews, addReview, updateReview, deleteReview } from '../api/heroes';
 import './HeroDetailPage.css';
 
 function HeroDetailPage() {
@@ -15,6 +15,7 @@ function HeroDetailPage() {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [editingReviewId, setEditingReviewId] = useState(null);
 
   useEffect(() => {
     fetchHeroAndCheckFavorite();
@@ -121,6 +122,37 @@ function HeroDetailPage() {
       const errorMsg = err.message || 'Failed to delete review';
       alert('❌ ' + errorMsg);
     }
+  };
+
+  const handleEditReview = (review) => {
+    setEditingReviewId(review.id);
+    setReviewForm({ rating: review.rating, comment: review.comment });
+  };
+
+  const handleUpdateReview = async (reviewId) => {
+    if (!reviewForm.comment.trim()) {
+      alert('Please write a comment');
+      return;
+    }
+
+    try {
+      setSubmittingReview(true);
+      await updateReview(reviewId, reviewForm.rating, reviewForm.comment);
+      setEditingReviewId(null);
+      setReviewForm({ rating: 5, comment: '' });
+      await fetchHeroAndCheckFavorite(); // Reload to get updated review
+      alert('✅ Review updated!');
+    } catch (err) {
+      console.error('Error updating review:', err);
+      alert('❌ Failed to update review: ' + err.message);
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const handleCancelEditReview = () => {
+    setEditingReviewId(null);
+    setReviewForm({ rating: 5, comment: '' });
   };
 
   if (loading) {
@@ -316,19 +348,79 @@ function HeroDetailPage() {
               <div className="reviews-list">
                 {reviews.map(review => (
                   <div key={review.id} className="review-card">
-                    <div className="review-header">
-                      <div className="review-rating">
-                        {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                    {editingReviewId === review.id ? (
+                      // Edit Mode
+                      <div className="review-edit-form">
+                        <div className="form-group">
+                          <label className="form-label">Rating</label>
+                          <div className="rating-selector">
+                            {[1, 2, 3, 4, 5].map(star => (
+                              <button
+                                key={star}
+                                className={`star ${reviewForm.rating >= star ? 'active' : ''}`}
+                                onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                              >
+                                ★
+                              </button>
+                            ))}
+                            <span className="rating-text">{reviewForm.rating}/5</span>
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">Comment</label>
+                          <textarea
+                            value={reviewForm.comment}
+                            onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+                            placeholder="Update your review..."
+                            rows="3"
+                            className="form-control"
+                          />
+                        </div>
+
+                        <div className="review-edit-actions">
+                          <button
+                            className="btn-save-review"
+                            onClick={() => handleUpdateReview(review.id)}
+                            disabled={submittingReview}
+                          >
+                            {submittingReview ? '⏳ Saving...' : '✓ Save'}
+                          </button>
+                          <button
+                            className="btn-cancel-edit"
+                            onClick={handleCancelEditReview}
+                            disabled={submittingReview}
+                          >
+                            ✕ Cancel
+                          </button>
+                        </div>
                       </div>
-                      <span className="review-meta">{new Date(review.created_at).toLocaleDateString()}</span>
-                    </div>
-                    <p className="review-comment">{review.comment}</p>
-                    <button
-                      className="btn-delete-review"
-                      onClick={() => handleDeleteReview(review.id)}
-                    >
-                      Delete
-                    </button>
+                    ) : (
+                      // Display Mode
+                      <>
+                        <div className="review-header">
+                          <div className="review-rating">
+                            {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                          </div>
+                          <span className="review-meta">{new Date(review.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <p className="review-comment">{review.comment}</p>
+                        <div className="review-actions">
+                          <button
+                            className="btn-edit-review"
+                            onClick={() => handleEditReview(review)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="btn-delete-review"
+                            onClick={() => handleDeleteReview(review.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>

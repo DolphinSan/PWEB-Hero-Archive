@@ -61,7 +61,7 @@ exports.updateFavorite = async (req, res) => {
     }
 
     const result = await pool.query(
-      'UPDATE favorites SET notes = $1, priority = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 AND user_id = $4 RETURNING *',
+      'UPDATE favorites SET notes = $1, priority = $2 WHERE id = $3 AND user_id = $4 RETURNING *',
       [notes || null, priority || 2, id, user_id]
     );
 
