@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getAllHeroes, createHero, updateHero, deleteHero } from '../api/heroes';
+import './AdminPanel.css'; // ← TAMBAHKAN INI
 
 const ROLES = ['Fighter', 'Marksman', 'Assassin', 'Mage', 'Tank', 'Support'];
 

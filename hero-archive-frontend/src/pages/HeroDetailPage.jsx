@@ -1,333 +1,339 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getHeroById, getReviews, addReview, updateReview, deleteReview, addFavorite, deleteFavorite } from '../api/heroes';
+import { getHeroById, addFavorite, getFavorites, getReviews, addReview, deleteReview } from '../api/heroes';
+import './HeroDetailPage.css';
 
 function HeroDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [hero, setHero] = useState(null);
-  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [submitingReview, setSubmitingReview] = useState(false);
-  const [editingReviewId, setEditingReviewId] = useState(null);
-  const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
-  const [editReview, setEditReview] = useState({ rating: 5, comment: '' });
+  const [error, setError] = useState(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
-    loadHeroData();
+    fetchHeroAndCheckFavorite();
   }, [id]);
 
-  const loadHeroData = async () => {
+  const fetchHeroAndCheckFavorite = async () => {
     try {
       setLoading(true);
-      const heroRes = await getHeroById(id);
-      setHero(heroRes);
-      const reviewsRes = await getReviews(id);
-      setReviews(Array.isArray(reviewsRes) ? reviewsRes : []);
+      
+      // Fetch hero details
+      const heroData = await getHeroById(id);
+      console.log('Hero data:', heroData);
+      
+      // Handle different response formats
+      const hero = heroData.hero || heroData;
+      setHero(hero);
+
+      // Check if already in favorites
+      try {
+        const favoritesData = await getFavorites();
+        const favorites = Array.isArray(favoritesData) 
+          ? favoritesData 
+          : (favoritesData.favorites || []);
+        
+        const isAlreadyFavorite = favorites.some(
+          fav => fav.hero_id === parseInt(id) || fav.hero?.id === parseInt(id)
+        );
+        setIsFavorite(isAlreadyFavorite);
+      } catch (favError) {
+        console.warn('Could not check favorites:', favError);
+        setIsFavorite(false);
+      }
+
+      // Fetch reviews
+      try {
+        const reviewsData = await getReviews(id);
+        console.log('Reviews data:', reviewsData);
+        setReviews(Array.isArray(reviewsData) ? reviewsData : reviewsData.reviews || []);
+      } catch (revError) {
+        console.warn('Could not load reviews:', revError);
+        setReviews([]);
+      }
+
+      setError(null);
     } catch (err) {
-      setError('Failed to load hero data: ' + err.message);
-      console.error('Error loading hero:', err);
+      console.error('Error fetching hero:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const getCurrentUserId = () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) return null;
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.id;
-    } catch (e) {
-      return null;
-    }
-  };
+  const handleAddToFavorites = async () => {
+    if (adding || isFavorite) return;
 
-  const handleAddFavorite = async () => {
     try {
+      setAdding(true);
+      console.log('Adding hero to favorites:', id);
+      
+      // Send request to add favorite
       await addFavorite(parseInt(id));
-      setIsFavorited(true);
+      
+      setIsFavorite(true);
       alert('✅ Added to favorites!');
     } catch (err) {
-      alert('Error: ' + err.message);
-    }
-  };
-
-  const handleRemoveFavorite = async () => {
-    try {
-      // This is a simplified version - in real app you'd need favorite id
-      await removeFavorite(parseInt(id));
-      setIsFavorited(false);
-      alert('✅ Removed from favorites!');
-    } catch (err) {
-      alert('Error: ' + err.message);
-    }
-  };
-
-  const handleSubmitReview = async (e) => {
-    e.preventDefault();
-    if (!newReview.comment.trim()) {
-      alert('Please write a comment');
-      return;
-    }
-    try {
-      setSubmitingReview(true);
-      await addReview(parseInt(id), parseInt(newReview.rating), newReview.comment);
-      setNewReview({ rating: 5, comment: '' });
-      loadHeroData();
-      alert('✅ Review submitted!');
-    } catch (err) {
-      alert('Error: ' + err.message);
+      console.error('Error adding to favorites:', err);
+      alert('❌ Failed to add to favorites: ' + err.message);
     } finally {
-      setSubmitingReview(false);
+      setAdding(false);
     }
   };
 
-  const handleEditReview = (review) => {
-    setEditingReviewId(review.id);
-    setEditReview({ rating: review.rating, comment: review.comment });
-  };
-
-  const handleUpdateReview = async (reviewId) => {
-    if (!editReview.comment.trim()) {
+  const handleSubmitReview = async () => {
+    if (!reviewForm.comment.trim()) {
       alert('Please write a comment');
       return;
     }
-    try {
-      await updateReview(reviewId, parseInt(editReview.rating), editReview.comment);
-      alert('✅ Review updated!');
-      setEditingReviewId(null);
-      loadHeroData();
-    } catch (err) {
-      alert('Error: ' + err.message);
-    }
-  };
 
-  const handleCancelEdit = () => {
-    setEditingReviewId(null);
-    setEditReview({ rating: 5, comment: '' });
+    try {
+      setSubmittingReview(true);
+      await addReview(parseInt(id), reviewForm.rating, reviewForm.comment);
+      setReviewForm({ rating: 5, comment: '' });
+      setShowReviewForm(false);
+      await fetchHeroAndCheckFavorite(); // Reload to get new review
+      alert('✅ Review added!');
+    } catch (err) {
+      console.error('Error adding review:', err);
+      alert('❌ Failed to add review: ' + err.message);
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
   const handleDeleteReview = async (reviewId) => {
     if (!window.confirm('Delete this review?')) return;
+    
     try {
       await deleteReview(reviewId);
-      loadHeroData();
+      setReviews(reviews.filter(r => r.id !== reviewId));
       alert('✅ Review deleted!');
     } catch (err) {
-      alert('Error: ' + err.message);
+      console.error('Error deleting review:', err);
+      // Check if error message contains the custom message
+      const errorMsg = err.message || 'Failed to delete review';
+      alert('❌ ' + errorMsg);
     }
   };
 
-  if (loading) return <div className="loading">Loading hero data...</div>;
+  if (loading) {
+    return (
+      <div className="hero-detail-container">
+        <div className="page-status">Loading hero details...</div>
+      </div>
+    );
+  }
 
-  if (error) return <div className="alert alert-danger">{error}</div>;
+  if (error) {
+    return (
+      <div className="hero-detail-container">
+        <div className="error-msg">Error: {error}</div>
+        <button className="btn-back" onClick={() => navigate('/')}>
+          ← Back to Heroes
+        </button>
+      </div>
+    );
+  }
 
-  if (!hero) return <div className="alert alert-warning">Hero not found</div>;
-
-  const currentUserId = getCurrentUserId();
+  if (!hero) {
+    return (
+      <div className="hero-detail-container">
+        <div className="empty-msg">Hero not found</div>
+        <button className="btn-back" onClick={() => navigate('/')}>
+          ← Back to Heroes
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="hero-detail-page">
-      <button onClick={() => navigate('/')} className="btn btn--secondary">
+    <div className="hero-detail-container">
+      <button className="btn-back" onClick={() => navigate('/')}>
         ← Back to Heroes
       </button>
 
-      <div className="hero-detail-container">
-        {/* Hero Image & Basic Info */}
-        <div className="hero-detail-header">
-          {hero.image_url && (
-            <img src={hero.image_url} alt={hero.name} className="hero-detail-image" />
-          )}
-          <div className="hero-detail-info">
-            <h1>{hero.name}</h1>
-            <p className="specialty">🎯 {hero.specialty}</p>
-            <div className="role-badge">{hero.role}</div>
-            <p className="description">{hero.description}</p>
-
-            <div className="action-buttons">
-              <button
-                className={`btn ${isFavorited ? 'btn--secondary' : 'btn--primary'}`}
-                onClick={isFavorited ? handleRemoveFavorite : handleAddFavorite}
-              >
-                {isFavorited ? '❤️ Favorited' : '🤍 Add to Favorites'}
-              </button>
-            </div>
-          </div>
+      <div className="hero-detail-card">
+        <div className="hero-detail-image-section">
+          <img 
+            src={hero.hero_image_url || hero.image_url} 
+            alt={hero.hero_name || hero.name}
+            className="hero-detail-image"
+            onError={(e) => {
+              e.target.src = 'https://via.placeholder.com/400x500?text=No+Image';
+            }}
+          />
         </div>
 
-        {/* Stats */}
-        <div className="hero-stats">
-          <div className="stat-card">
-            <label>Difficulty</label>
-            <div className="stat-value">{hero.difficulty}/10</div>
+        <div className="hero-detail-info-section">
+          <div className="hero-detail-header">
+            <h1>{hero.hero_name || hero.name}</h1>
+            <span className="hero-detail-role">{hero.role}</span>
           </div>
-          <div className="stat-card">
-            <label>Durability</label>
-            <div className="stat-bar-container">
+
+          <p className="hero-detail-specialty">
+            <strong>Specialty:</strong> {hero.specialty}
+          </p>
+
+          <p className="hero-detail-description">{hero.description}</p>
+
+          <button 
+            className={`btn-favorite ${isFavorite ? 'is-favorite' : ''}`}
+            onClick={handleAddToFavorites}
+            disabled={adding || isFavorite}
+          >
+            {adding ? '⏳ Adding...' : isFavorite ? '⭐ Already in Favorites' : '💗 Add to Favorites'}
+          </button>
+
+          <div className="hero-detail-stats">
+            <h3>Hero Statistics</h3>
+            
+            <div className="stat-item">
+              <div className="stat-label">
+                <span>Difficulty</span>
+                <span>{hero.difficulty}/10</span>
+              </div>
               <div className="stat-bar">
-                <div
-                  className="stat-bar-fill"
+                <div 
+                  className="stat-fill difficulty"
+                  style={{ width: `${(hero.difficulty / 10) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+
+            <div className="stat-item">
+              <div className="stat-label">
+                <span>Durability</span>
+                <span>{hero.durability}%</span>
+              </div>
+              <div className="stat-bar">
+                <div 
+                  className="stat-fill durability"
                   style={{ width: `${hero.durability}%` }}
                 ></div>
               </div>
-              <span>{hero.durability}%</span>
             </div>
-          </div>
-          <div className="stat-card">
-            <label>Offense</label>
-            <div className="stat-bar-container">
+
+            <div className="stat-item">
+              <div className="stat-label">
+                <span>Offense</span>
+                <span>{hero.offense}%</span>
+              </div>
               <div className="stat-bar">
-                <div
-                  className="stat-bar-fill"
+                <div 
+                  className="stat-fill offense"
                   style={{ width: `${hero.offense}%` }}
                 ></div>
               </div>
-              <span>{hero.offense}%</span>
             </div>
-          </div>
-          <div className="stat-card">
-            <label>Control</label>
-            <div className="stat-bar-container">
+
+            <div className="stat-item">
+              <div className="stat-label">
+                <span>Control</span>
+                <span>{hero.control_stat}%</span>
+              </div>
               <div className="stat-bar">
-                <div
-                  className="stat-bar-fill"
+                <div 
+                  className="stat-fill control"
                   style={{ width: `${hero.control_stat}%` }}
                 ></div>
               </div>
-              <span>{hero.control_stat}%</span>
             </div>
-          </div>
-          <div className="stat-card">
-            <label>Movement</label>
-            <div className="stat-bar-container">
+
+            <div className="stat-item">
+              <div className="stat-label">
+                <span>Movement</span>
+                <span>{hero.movement}%</span>
+              </div>
               <div className="stat-bar">
-                <div
-                  className="stat-bar-fill"
+                <div 
+                  className="stat-fill movement"
                   style={{ width: `${hero.movement}%` }}
                 ></div>
               </div>
-              <span>{hero.movement}%</span>
             </div>
           </div>
-        </div>
 
-        {/* Reviews Section */}
-        <div className="reviews-section">
-          <h2>💬 Reviews ({reviews.length})</h2>
-
-          {/* Add Review Form */}
-          <form onSubmit={handleSubmitReview} className="review-form card">
-            <h3>Add Your Review</h3>
-            <div className="form-group">
-              <label className="form-label">Rating</label>
-              <select
-                value={newReview.rating}
-                onChange={(e) => setNewReview({ ...newReview, rating: parseInt(e.target.value) })}
-                className="form-control"
+          <div className="hero-reviews">
+            <div className="reviews-header">
+              <h3>💬 Reviews ({reviews.length})</h3>
+              <button 
+                className="btn-add-review"
+                onClick={() => setShowReviewForm(!showReviewForm)}
               >
-                {[1, 2, 3, 4, 5].map(num => (
-                  <option key={num} value={num}>{num} ⭐</option>
-                ))}
-              </select>
+                {showReviewForm ? '✕ Cancel' : '+ Add Review'}
+              </button>
             </div>
-            <div className="form-group">
-              <label className="form-label">Comment</label>
-              <textarea
-                value={newReview.comment}
-                onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
-                className="form-control"
-                placeholder="Share your thoughts about this hero..."
-                rows="4"
-              />
-            </div>
-            <button
-              type="submit"
-              className="btn btn--primary"
-              disabled={submitingReview}
-            >
-              {submitingReview ? '⏳ Submitting...' : 'Submit Review'}
-            </button>
-          </form>
 
-          {/* Reviews List */}
-          {reviews.length === 0 ? (
-            <p>No reviews yet. Be the first to review!</p>
-          ) : (
-            <div className="reviews-list">
-              {reviews.map((review) => (
-                <div key={review.id} className="review-card card">
-                  {editingReviewId === review.id ? (
-                    // Edit Mode
-                    <div>
-                      <div className="form-group">
-                        <label className="form-label">Rating</label>
-                        <select
-                          value={editReview.rating}
-                          onChange={(e) => setEditReview({ ...editReview, rating: parseInt(e.target.value) })}
-                          className="form-control"
-                        >
-                          {[1, 2, 3, 4, 5].map(num => (
-                            <option key={num} value={num}>{num} ⭐</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Comment</label>
-                        <textarea
-                          value={editReview.comment}
-                          onChange={(e) => setEditReview({ ...editReview, comment: e.target.value })}
-                          className="form-control"
-                          rows="3"
-                        />
-                      </div>
-                      <div className="button-group">
-                        <button
-                          onClick={() => handleUpdateReview(review.id)}
-                          className="btn btn--primary btn--sm"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={handleCancelEdit}
-                          className="btn btn--secondary btn--sm"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    // Display Mode
-                    <div>
-                      <div className="review-header">
-                        <strong>{review.username}</strong>
-                        <span className="rating">{'⭐'.repeat(review.rating)}</span>
-                      </div>
-                      <p className="review-comment">{review.comment}</p>
-                      {currentUserId === review.user_id && (
-                        <div className="review-actions">
-                          <button
-                            onClick={() => handleEditReview(review)}
-                            className="btn btn--secondary btn--sm"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteReview(review.id)}
-                            className="btn btn--danger btn--sm"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
+            {showReviewForm && (
+              <div className="review-form">
+                <div className="form-group">
+                  <label className="form-label">Rating</label>
+                  <div className="rating-selector">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <button
+                        key={star}
+                        className={`star ${reviewForm.rating >= star ? 'active' : ''}`}
+                        onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                      >
+                        ★
+                      </button>
+                    ))}
+                    <span className="rating-text">{reviewForm.rating}/5</span>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
+
+                <div className="form-group">
+                  <label className="form-label">Comment</label>
+                  <textarea
+                    value={reviewForm.comment}
+                    onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+                    placeholder="Share your thoughts about this hero..."
+                    rows="3"
+                    className="form-control"
+                  />
+                </div>
+
+                <button
+                  className="btn-submit-review"
+                  onClick={handleSubmitReview}
+                  disabled={submittingReview}
+                >
+                  {submittingReview ? '⏳ Submitting...' : 'Submit Review'}
+                </button>
+              </div>
+            )}
+
+            {reviews.length === 0 ? (
+              <p className="reviews-placeholder">No reviews yet. Be the first to review this hero!</p>
+            ) : (
+              <div className="reviews-list">
+                {reviews.map(review => (
+                  <div key={review.id} className="review-card">
+                    <div className="review-header">
+                      <div className="review-rating">
+                        {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                      </div>
+                      <span className="review-meta">{new Date(review.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <p className="review-comment">{review.comment}</p>
+                    <button
+                      className="btn-delete-review"
+                      onClick={() => handleDeleteReview(review.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

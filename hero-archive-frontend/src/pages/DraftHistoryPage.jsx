@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { getDrafts, updateDraft, deleteDraft, getAllHeroes } from '../api/heroes';
+import { getDrafts, updateDraft, deleteDraft, getAllHeroes, createDraft } from '../api/heroes';
 import { useNavigate } from 'react-router-dom';
+import './DraftHistoryPage.css';
 
 function DraftHistoryPage() {
   const [drafts, setDrafts] = useState([]);
@@ -8,6 +9,7 @@ function DraftHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [editForm, setEditForm] = useState({ title: '', description: '', selected_heroes: [] });
   const navigate = useNavigate();
 
@@ -46,11 +48,17 @@ function DraftHistoryPage() {
 
   const handleEdit = (draft) => {
     setEditingId(draft.id);
-    const selectedHeroes = draft.selected_heroes
-      ? draft.selected_heroes.split(',').map(id => parseInt(id.trim()))
-      : [];
+    // Parse hero_ids from backend - can be array or string
+    let selectedHeroes = [];
+    if (draft.hero_ids) {
+      if (Array.isArray(draft.hero_ids)) {
+        selectedHeroes = draft.hero_ids.map(id => parseInt(id)).filter(id => !isNaN(id));
+      } else if (typeof draft.hero_ids === 'string') {
+        selectedHeroes = draft.hero_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+      }
+    }
     setEditForm({
-      title: draft.title,
+      title: draft.team_name || draft.title || '',
       description: draft.description || '',
       selected_heroes: selectedHeroes
     });
@@ -84,9 +92,8 @@ function DraftHistoryPage() {
     }
     try {
       await updateDraft(id, {
-        title: editForm.title,
-        description: editForm.description,
-        selected_heroes: editForm.selected_heroes.join(',')
+        team_name: editForm.title,
+        hero_ids: editForm.selected_heroes
       });
       setEditingId(null);
       loadData();
@@ -98,7 +105,31 @@ function DraftHistoryPage() {
 
   const handleCancel = () => {
     setEditingId(null);
+    setIsCreating(false);
     setEditForm({ title: '', description: '', selected_heroes: [] });
+  };
+
+  const handleCreate = async () => {
+    if (!editForm.title.trim()) {
+      alert('Please enter a title');
+      return;
+    }
+    if (editForm.selected_heroes.length === 0) {
+      alert('Please select at least one hero');
+      return;
+    }
+    try {
+      await createDraft({
+        team_name: editForm.title,
+        hero_ids: editForm.selected_heroes
+      });
+      setIsCreating(false);
+      loadData();
+      alert('✅ Draft created!');
+      setEditForm({ title: '', description: '', selected_heroes: [] });
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
   };
 
   if (loading) {
@@ -120,16 +151,83 @@ function DraftHistoryPage() {
   return (
     <div className="draft-page">
       <div className="page-header">
-        <h1>📋 Draft History</h1>
-        <p>Manage and refine your hero team drafts</p>
+        <div className="header-content">
+          <h1>📋 Draft History</h1>
+          <p>Manage and refine your hero team drafts</p>
+        </div>
+        <button 
+          className="btn btn--primary btn--lg"
+          onClick={() => setIsCreating(true)}
+        >
+          + Create New Draft
+        </button>
       </div>
+
+      {isCreating && (
+        <div className="create-draft-card card">
+          <div className="edit-form">
+            <h3>Create New Draft</h3>
+            <div className="form-group">
+              <label className="form-label">Title</label>
+              <input
+                type="text"
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                className="form-control"
+                placeholder="Enter draft title"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Description</label>
+              <textarea
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                className="form-control"
+                placeholder="Enter draft description (optional)"
+                rows="2"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">
+                Select Heroes ({editForm.selected_heroes.length} selected)
+              </label>
+              <div className="heroes-grid">
+                {heroes.map((hero) => (
+                  <label key={hero.id} className="hero-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={editForm.selected_heroes.includes(hero.id)}
+                      onChange={() => handleHeroToggle(hero.id)}
+                    />
+                    <span>{hero.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="button-group">
+              <button
+                onClick={handleCreate}
+                className="btn btn--primary btn--sm"
+              >
+                Create Draft
+              </button>
+              <button
+                onClick={handleCancel}
+                className="btn btn--secondary btn--sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {drafts.length === 0 ? (
         <div className="empty-state">
           <h3>😢 No drafts yet</h3>
           <p>Create your first draft to start planning hero teams</p>
-          <button onClick={() => navigate('/')} className="btn btn--primary">
-            Explore Heroes
+          <button onClick={() => setIsCreating(true)} className="btn btn--primary">
+            Create First Draft
           </button>
         </div>
       ) : (
@@ -196,9 +294,16 @@ function DraftHistoryPage() {
                 // Display Mode
                 <div className="draft-info">
                   <div className="draft-header">
-                    <h3>{draft.title}</h3>
+                    <h3>{draft.team_name || draft.title}</h3>
                     <span className="hero-count">
-                      {editForm.selected_heroes.length || draft.selected_heroes?.split(',').length || 0} heroes
+                      {(() => {
+                        if (draft.hero_ids && Array.isArray(draft.hero_ids)) {
+                          return draft.hero_ids.length;
+                        } else if (draft.hero_ids && typeof draft.hero_ids === 'string') {
+                          return draft.hero_ids.split(',').length;
+                        }
+                        return 0;
+                      })()} heroes
                     </span>
                   </div>
 
@@ -209,15 +314,20 @@ function DraftHistoryPage() {
                   <div className="selected-heroes">
                     <strong>Selected Heroes:</strong>
                     <div className="heroes-list">
-                      {draft.selected_heroes && draft.selected_heroes.length > 0 ? (
-                        draft.selected_heroes.split(',').map((heroId) => {
-                          const hero = heroes.find(h => h.id === parseInt(heroId.trim()));
-                          return hero ? (
-                            <span key={hero.id} className="hero-tag">
-                              {hero.name}
-                            </span>
-                          ) : null;
-                        })
+                      {draft.hero_ids && (draft.hero_ids.length > 0 || (typeof draft.hero_ids === 'string' && draft.hero_ids.trim() !== '')) ? (
+                        (() => {
+                          const heroIdsList = Array.isArray(draft.hero_ids) 
+                            ? draft.hero_ids 
+                            : draft.hero_ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+                          return heroIdsList.map((heroId) => {
+                            const hero = heroes.find(h => h.id === heroId);
+                            return hero ? (
+                              <span key={hero.id} className="hero-tag">
+                                {hero.name}
+                              </span>
+                            ) : null;
+                          });
+                        })()
                       ) : (
                         <span className="empty-heroes">No heroes selected</span>
                       )}

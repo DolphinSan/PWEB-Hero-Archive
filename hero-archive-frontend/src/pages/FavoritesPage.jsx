@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getFavorites, updateFavorite, deleteFavorite } from '../api/heroes';
 import { useNavigate } from 'react-router-dom';
+import './FavoritesPage.css';
 
 function FavoritesPage() {
   const [favorites, setFavorites] = useState([]);
@@ -18,6 +19,7 @@ function FavoritesPage() {
     try {
       setLoading(true);
       const data = await getFavorites();
+      console.log('Favorites data received:', data);
       setFavorites(Array.isArray(data) ? data : data.favorites || []);
       setError('');
     } catch (err) {
@@ -160,24 +162,107 @@ function FavoritesPage() {
                   // Display Mode
                   <div className="favorite-info">
                     <div className="favorite-header">
-                      <h3>{favorite.hero_name}</h3>
-                      <span className={`priority-badge priority-${String(favorite.priority || 'medium').toLowerCase()}`}>
-                        {favorite.priority || 'Medium'}
-                      </span>
-                    </div>
-
-                    <div className="favorite-details">
-                      <p><strong>Role:</strong> {favorite.role}</p>
-                      <p><strong>Specialty:</strong> {favorite.specialty}</p>
-                      {favorite.notes && (
-                        <div className="notes-section">
-                          <strong>Notes:</strong>
-                          <p>{favorite.notes}</p>
+                      <div className="hero-image-section">
+                        <img 
+                          src={favorite.image_url} 
+                          alt={favorite.name}
+                          className="hero-image"
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/200x200?text=No+Image';
+                          }}
+                        />
+                      </div>
+                      
+                      <div className="hero-info-section">
+                        <div className="hero-title-row">
+                          <h3>{favorite.name}</h3>
+                          <span className={`priority-badge priority-${String(favorite.priority || 'medium').toLowerCase()}`}>
+                            {favorite.priority || 'Medium'}
+                          </span>
                         </div>
-                      )}
-                      <p className="added-date">
-                        ➕ Added: {new Date(favorite.created_at).toLocaleDateString()}
-                      </p>
+                        
+                        <p className="hero-specialty-text">
+                          <strong>Specialty:</strong> {favorite.specialty || 'N/A'}
+                        </p>
+
+                        <p className="hero-description-text">
+                          {favorite.description || 'No description available'}
+                        </p>
+
+                        <div className="hero-stats">
+                          <div className="stat-item">
+                            <div className="stat-label">
+                              <span>Difficulty</span>
+                              <span>{favorite.difficulty}/10</span>
+                            </div>
+                            <div className="stat-bar">
+                              <div 
+                                className="stat-fill difficulty" 
+                                style={{ width: `${(favorite.difficulty / 10) * 100}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                          <div className="stat-item">
+                            <div className="stat-label">
+                              <span>Durability</span>
+                              <span>{favorite.durability}%</span>
+                            </div>
+                            <div className="stat-bar">
+                              <div 
+                                className="stat-fill durability"
+                                style={{ width: `${favorite.durability}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                          <div className="stat-item">
+                            <div className="stat-label">
+                              <span>Offense</span>
+                              <span>{favorite.offense}%</span>
+                            </div>
+                            <div className="stat-bar">
+                              <div 
+                                className="stat-fill offense"
+                                style={{ width: `${favorite.offense}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                          <div className="stat-item">
+                            <div className="stat-label">
+                              <span>Control</span>
+                              <span>{favorite.control_stat}%</span>
+                            </div>
+                            <div className="stat-bar">
+                              <div 
+                                className="stat-fill control"
+                                style={{ width: `${favorite.control_stat}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                          <div className="stat-item">
+                            <div className="stat-label">
+                              <span>Movement</span>
+                              <span>{favorite.movement}%</span>
+                            </div>
+                            <div className="stat-bar">
+                              <div 
+                                className="stat-fill movement"
+                                style={{ width: `${favorite.movement}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {favorite.notes && (
+                          <div className="notes-section">
+                            <strong>📝 Notes:</strong>
+                            <p>{favorite.notes}</p>
+                          </div>
+                        )}
+
+                        <p className="added-date">
+                          ➕ Added: {new Date(favorite.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
 
                     <div className="favorite-actions">

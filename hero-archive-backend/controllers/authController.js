@@ -12,7 +12,7 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
-    // Check if user exists
+    // Check user
     const userExists = await pool.query(
       'SELECT * FROM users WHERE email = $1 OR username = $2',
       [email, username]

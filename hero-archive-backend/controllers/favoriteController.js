@@ -28,7 +28,8 @@ exports.getFavorites = async (req, res) => {
     const user_id = req.user.id;
 
     const result = await pool.query(
-      `SELECT f.*, h.name, h.role, h.image_url 
+      `SELECT f.*, h.name, h.role, h.image_url, h.specialty, h.description, 
+              h.difficulty, h.durability, h.offense, h.control_stat, h.movement
        FROM favorites f
        JOIN heroes h ON f.hero_id = h.id
        WHERE f.user_id = $1
@@ -50,12 +51,18 @@ exports.getFavorites = async (req, res) => {
 exports.updateFavorite = async (req, res) => {
   try {
     const { id } = req.params;
-    const { notes, priority } = req.body;
+    let { notes, priority } = req.body;
     const user_id = req.user.id;
 
+    // Convert priority string to number if needed
+    if (typeof priority === 'string') {
+      const priorityMap = { 'Low': 1, 'Medium': 2, 'High': 3 };
+      priority = priorityMap[priority] || 2;
+    }
+
     const result = await pool.query(
-      'UPDATE favorites SET notes = $1, priority = $2 WHERE id = $3 AND user_id = $4 RETURNING *',
-      [notes, priority, id, user_id]
+      'UPDATE favorites SET notes = $1, priority = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 AND user_id = $4 RETURNING *',
+      [notes || null, priority || 2, id, user_id]
     );
 
     if (result.rows.length === 0) {

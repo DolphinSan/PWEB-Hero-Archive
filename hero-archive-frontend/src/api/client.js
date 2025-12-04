@@ -1,5 +1,5 @@
 // API Client dengan auto token injection
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000:api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; // ← PERBAIKI: ganti : jadi /
 
 const client = {
   async get(endpoint, options = {}) {
@@ -63,5 +63,15 @@ const client = {
     return data;
   }
 };
+
+// ✅ TAMBAHKAN NAMED EXPORTS untuk fungsi-fungsi spesifik
+export const getHeroes = () => client.get('/heroes');
+export const getHeroById = (id) => client.get(`/heroes/${id}`);
+export const getFavorites = () => client.get('/favorites');
+export const addToFavorites = (heroId) => client.post('/favorites', { hero_id: heroId });
+export const removeFromFavorites = (heroId) => client.delete(`/favorites/${heroId}`);
+export const getDrafts = () => client.get('/drafts');
+export const createDraft = (draftData) => client.post('/drafts', draftData);
+export const deleteDraft = (draftId) => client.delete(`/drafts/${draftId}`);
 
 export default client;

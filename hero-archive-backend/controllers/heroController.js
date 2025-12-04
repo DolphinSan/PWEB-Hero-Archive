@@ -1,6 +1,6 @@
 const pool = require('../config/database');
 
-// READ - Get all heroes (with filter & search)
+// READ - Get all heroes
 exports.getAllHeroes = async (req, res) => {
   try {
     const { role, search } = req.query;

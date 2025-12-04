@@ -2,10 +2,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
 
-import "./App.css"
-import "./styles/globals.css"
-import "./styles/theme.css"
-import "./styles/LoginPage.css"
+// Urutan import CSS:
+import "./styles/theme.css"       // 1. Variables dulu
+import "./styles/globals.css"     // 2. Global reset
+import "./index.css"              // 3. Base styles
+import "./App.css"                // 4. App layout & navbar
+import "./styles/LoginPage.css"   // 5. Page styles
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
